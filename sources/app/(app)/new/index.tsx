@@ -3,7 +3,7 @@ import { View, Text, Platform, Pressable, useWindowDimensions } from 'react-nati
 import { Typography } from '@/constants/Typography';
 import { useAllMachines, storage, useSetting } from '@/sync/storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useUnistyles } from 'react-native-unistyles';
 import { layout } from '@/components/layout';
 import { t } from '@/text';
@@ -24,13 +24,16 @@ import { PermissionMode, ModelMode } from '@/components/PermissionModeSelector';
 
 // Simple temporary state for passing selections back from picker screens
 let onMachineSelected: (machineId: string) => void = () => { };
-let onPathSelected: (path: string) => void = () => { };
 export const callbacks = {
+    // Store pending selections as values (more reliable than callbacks on Web)
+    pendingPath: null as string | null,
+    pendingMachineId: null as string | null,
     onMachineSelected: (machineId: string) => {
+        callbacks.pendingMachineId = machineId;
         onMachineSelected(machineId);
     },
     onPathSelected: (path: string) => {
-        onPathSelected(path);
+        callbacks.pendingPath = path;
     }
 }
 
@@ -194,15 +197,15 @@ function NewSessionScreen() {
         };
     }, [recentMachinePaths]);
 
-    React.useEffect(() => {
-        let handler = (path: string) => {
-            setSelectedPath(path);
-        };
-        onPathSelected = handler;
-        return () => {
-            onPathSelected = () => { };
-        };
-    }, []);
+    // Check for pending path selection when screen gains focus (works reliably on Web)
+    useFocusEffect(
+        React.useCallback(() => {
+            if (callbacks.pendingPath) {
+                setSelectedPath(callbacks.pendingPath);
+                callbacks.pendingPath = null;
+            }
+        }, [])
+    );
 
     const handleMachineClick = React.useCallback(() => {
         router.push('/new/pick/machine');

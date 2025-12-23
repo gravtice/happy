@@ -70,6 +70,11 @@ export default function PathPickerScreen() {
 
     const [customPath, setCustomPath] = useState(params.selectedPath || '');
 
+    // Keep a ref to the latest customPath for use in headerRight callback
+    // (Stack.Screen options don't re-evaluate when state changes)
+    const customPathRef = useRef(customPath);
+    customPathRef.current = customPath;
+
     // Get the selected machine
     const machine = useMemo(() => {
         return machines.find(m => m.id === params.machineId);
@@ -121,11 +126,10 @@ export default function PathPickerScreen() {
 
 
     const handleSelectPath = React.useCallback(() => {
-        const pathToUse = customPath.trim() || machine?.metadata?.homeDir || '/home';
-        // Set the selection and go back
+        const pathToUse = customPathRef.current.trim() || machine?.metadata?.homeDir || '/home';
         callbacks.onPathSelected(pathToUse);
         router.back();
-    }, [customPath, router, machine]);
+    }, [router, machine]);
 
     if (!machine) {
         return (
@@ -138,7 +142,6 @@ export default function PathPickerScreen() {
                         headerRight: () => (
                             <Pressable
                                 onPress={handleSelectPath}
-                                disabled={!customPath.trim()}
                                 style={({ pressed }) => ({
                                     marginRight: 16,
                                     opacity: pressed ? 0.7 : 1,
@@ -175,7 +178,6 @@ export default function PathPickerScreen() {
                     headerRight: () => (
                         <Pressable
                             onPress={handleSelectPath}
-                            disabled={!customPath.trim()}
                             style={({ pressed }) => ({
                                 opacity: pressed ? 0.7 : 1,
                                 padding: 4,
