@@ -23,14 +23,12 @@ import { linkTaskToSession } from '@/-zen/model/taskSessionLink';
 import { PermissionMode, ModelMode } from '@/components/PermissionModeSelector';
 
 // Simple temporary state for passing selections back from picker screens
-let onMachineSelected: (machineId: string) => void = () => { };
 export const callbacks = {
     // Store pending selections as values (more reliable than callbacks on Web)
     pendingPath: null as string | null,
     pendingMachineId: null as string | null,
     onMachineSelected: (machineId: string) => {
         callbacks.pendingMachineId = machineId;
-        onMachineSelected(machineId);
     },
     onPathSelected: (path: string) => {
         callbacks.pendingPath = path;
@@ -181,30 +179,27 @@ function NewSessionScreen() {
         }
     }, [machines, selectedMachineId, recentMachinePaths]);
 
-    React.useEffect(() => {
-        let handler = (machineId: string) => {
-            let machine = storage.getState().machines[machineId];
-            if (machine) {
-                setSelectedMachineId(machineId);
-                // Also update the path when machine changes
-                const bestPath = getRecentPathForMachine(machineId, recentMachinePaths);
-                setSelectedPath(bestPath);
-            }
-        };
-        onMachineSelected = handler;
-        return () => {
-            onMachineSelected = () => { };
-        };
-    }, [recentMachinePaths]);
-
-    // Check for pending path selection when screen gains focus (works reliably on Web)
+    // Check for pending selections when screen gains focus (works reliably on Web)
     useFocusEffect(
         React.useCallback(() => {
+            // Handle pending machine selection
+            if (callbacks.pendingMachineId) {
+                const machine = storage.getState().machines[callbacks.pendingMachineId];
+                if (machine) {
+                    setSelectedMachineId(callbacks.pendingMachineId);
+                    // Also update the path when machine changes
+                    const bestPath = getRecentPathForMachine(callbacks.pendingMachineId, recentMachinePaths);
+                    setSelectedPath(bestPath);
+                }
+                callbacks.pendingMachineId = null;
+            }
+
+            // Handle pending path selection
             if (callbacks.pendingPath) {
                 setSelectedPath(callbacks.pendingPath);
                 callbacks.pendingPath = null;
             }
-        }, [])
+        }, [recentMachinePaths])
     );
 
     const handleMachineClick = React.useCallback(() => {
