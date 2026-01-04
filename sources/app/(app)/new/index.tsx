@@ -202,10 +202,6 @@ function NewSessionScreen() {
         }, [recentMachinePaths])
     );
 
-    const handleMachineClick = React.useCallback(() => {
-        router.push('/new/pick/machine');
-    }, []);
-
     //
     // Agent selection
     //
@@ -298,8 +294,18 @@ function NewSessionScreen() {
         // Initialize with the path from the selected machine (which should be the most recent if available)
         return getRecentPathForMachine(selectedMachineId, recentMachinePaths);
     });
+    const handleMachineClick = React.useCallback(() => {
+        // Preserve current path in case component remounts during navigation
+        if (selectedPath) {
+            callbacks.pendingPath = selectedPath;
+        }
+        router.push('/new/pick/machine');
+    }, [selectedPath]);
+
     const handlePathClick = React.useCallback(() => {
         if (selectedMachineId) {
+            // Preserve current machine in case component remounts during navigation
+            callbacks.pendingMachineId = selectedMachineId;
             router.push(`/new/pick/path?machineId=${selectedMachineId}`);
         }
     }, [selectedMachineId, router]);
