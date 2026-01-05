@@ -443,7 +443,8 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
 
         // Original key handling
         if (Platform.OS === 'web') {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            // Cmd+Enter (Mac) or Ctrl+Enter (Windows) to send message
+            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
                 if (props.value.trim()) {
                     props.onSend();
                     return true; // Key was handled
